@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "549525083176",
+    "project_id": "cuadernoprofe-58e46",
+    "storage_bucket": "cuadernoprofe-58e46.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:549525083176:android:39b36988c50fd74797511d",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1cuadermo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFeVCYjRShZ-sYDdK31qTLz94wyyVKB08"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
