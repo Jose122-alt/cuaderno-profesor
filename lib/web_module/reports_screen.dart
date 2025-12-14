@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/attendance_record.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -35,6 +36,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   DateTime? _desde;
   DateTime? _hasta;
   Map<String, Activity> _activityById = {};
+  
 
   @override
   void initState() {
@@ -96,14 +98,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final registrosFiltrados = (_desde == null && _hasta == null)
         ? registrosCurso
         : registrosCurso.where((r) {
-            final d = DateTime.tryParse(r.date);
-            if (d == null) return false;
+            final d = r.timestamp; // Usar el campo timestamp
+            if (d == null) return false; // Si timestamp es nulo, ignorar
             final afterStart = _desde == null || !d.isBefore(_desde!);
             final beforeEnd = _hasta == null || !d.isAfter(_hasta!);
             return afterStart && beforeEnd;
           }).toList();
-    final fechasUnicas = registrosFiltrados.map((r) => r.date).toSet();
-    _totalClases = fechasUnicas.length;
+
+
+
+
+    _totalClases = 48;
+
+
 
     final filas = <_FilaReporte>[];
     for (final st in estudiantes) {
@@ -111,7 +118,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
       int presentes = 0;
       int faltas = 0;
       int retardos = 0;
-      int justificados = 0;
       int entregas = 0;
       int calificadas = 0;
       double examSum = 0;
@@ -122,26 +128,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
       int compCnt = 0;
 
       if (sid != null) {
-        final registros = await _attendanceRecordService.getAttendanceRecordsByStudentIdAndCourseId(sid, _selectedCourse!.id!);
-        for (final r in registros) {
-          final d = DateTime.tryParse(r.date);
-          if ((_desde != null || _hasta != null)) {
-            if (d == null) continue;
-            final afterStart = _desde == null || !d.isBefore(_desde!);
-            final beforeEnd = _hasta == null || !d.isAfter(_hasta!);
-            if (!(afterStart && beforeEnd)) continue;
-          }
+        final studentRecords = registrosFiltrados.where((r) => r.studentId == sid).toList();
+        Set<String> diasPresentes = {};
+        for (final r in studentRecords) {
           final s = (r.status).toLowerCase();
-          if (s == 'present' || s == 'presente' || s == '1' || s == 'a' || s == 'p') {
-            presentes++;
+          if (s == 'present' || s == 'presente' || s == '1' || s == 'a' || s == 'p' || s == 'late' || s == 'tarde') {
+            diasPresentes.add(r.date);
           } else if (s == 'absent' || s == 'ausente' || s == '0' || s == 'f') {
-            faltas++;
-          } else if (s == 'late' || s == 'tarde' || s == 'r') {
-            retardos++;
-          } else if (s == 'justified' || s == 'justificado' || s == 'j') {
-            justificados++;
+            // No hacemos nada aquí, ya que solo nos interesan los días presentes únicos
+          } else if (s == 'justificado' || s == 'justificada' || s == 'j') {
+            // No hacemos nada aquí
           }
         }
+        presentes = diasPresentes.length;
 
         final evidencias = await _evidenceService.getEvidencesByStudentIdAndCourseId(sid, _selectedCourse!.id!);
         for (final ev in evidencias) {
@@ -153,7 +152,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             if (!(afterStart && beforeEnd)) continue;
           }
           final stEv = (ev.status).toLowerCase();
-          if (stEv == 'submitted' || stEv == 'entregado' || stEv == 'graded') {
+          if (stEv == 'submitted' || stEv == 'entregado' || stEv == 'graded' || stEv == 'entregado_retraso') {
             entregas++;
           }
           if (stEv == 'graded') {
@@ -168,20 +167,26 @@ class _ReportsScreenState extends State<ReportsScreen> {
         }
       }
 
-      final examAvg = examCnt > 0 ? (examSum / examCnt) : 0;
-      final portAvg = portCnt > 0 ? (portSum / portCnt) : 0;
-      final compAvg = compCnt > 0 ? (compSum / compCnt) : 0;
-      final finalGrade = (0.4 * examAvg) + (0.4 * portAvg) + (0.2 * compAvg);
+      final examAvg = examCnt > 0 ? (examSum / examCnt) : 0.0;
+      final portAvg = portCnt > 0 ? (portSum / portCnt) : 0.0;
+      final compAvg = compCnt > 0 ? (compSum / compCnt) : 0.0;
+      final evidTotCnt = portCnt + compCnt;
+      final evidenceAvg = evidTotCnt > 0 ? ((portSum + compSum) / evidTotCnt) : ((portAvg + compAvg) / (portCnt > 0 || compCnt > 0 ? 2.0 : 1.0));
+      final asistenciaPct = _totalClases > 0 ? (presentes.toDouble() / _totalClases.toDouble()) : 0.0;
+      final finalGrade = ((0.2 * asistenciaPct) + (0.4 * examAvg) + (0.4 * evidenceAvg)).toDouble();
+
 
       filas.add(_FilaReporte(
         alumno: st.name,
         presentes: presentes,
         faltas: faltas,
         retardos: retardos,
-        justificados: justificados,
         entregas: entregas,
         calificadas: calificadas,
-        finalGrade: finalGrade.round(),
+        asistenciaPct: asistenciaPct,
+        examAvg: examAvg,
+        evidenceAvg: evidenceAvg,
+        finalGrade: finalGrade,
       ));
     }
 
@@ -198,11 +203,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
         'Presentes',
         'Faltas',
         'Retardos',
-        'Justificados',
+
         'Total Clases',
         'Entregas',
         'Calificadas',
         'Total Tareas',
+        'Asistencia %',
+        'Exámenes',
+        'Evidencias',
         'Final',
       ];
       final lineas = <String>[];
@@ -213,11 +221,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
           f.presentes.toString(),
           f.faltas.toString(),
           f.retardos.toString(),
-          f.justificados.toString(),
+
           _totalClases.toString(),
           f.entregas.toString(),
           f.calificadas.toString(),
           _totalTareas.toString(),
+          f.asistenciaPct.toStringAsFixed(2),
+          f.examAvg.toStringAsFixed(2),
+          f.evidenceAvg.toStringAsFixed(2),
           f.finalGrade.toString(),
         ].join(','));
       }
@@ -254,18 +265,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
             pw.Text('Total de tareas: $_totalTareas'),
             pw.SizedBox(height: 12),
             pw.TableHelper.fromTextArray(
-              headers: ['Alumno','Presentes','Faltas','Retardos','Justificados','Entregas','Calificadas','Final'],
+              headers: ['Alumno','Presentes','Faltas','Retardos','Entregas','Calificadas','Asistencia %','Exámenes','Evidencias','Final'],
               data: _filas.map((f) => [
                 f.alumno,
                 f.presentes.toString(),
                 f.faltas.toString(),
                 f.retardos.toString(),
-                f.justificados.toString(),
                 f.entregas.toString(),
                 f.calificadas.toString(),
+                (f.asistenciaPct * 100).toStringAsFixed(2),
+                f.examAvg.toStringAsFixed(2),
+                f.evidenceAvg.toStringAsFixed(2),
                 f.finalGrade.toString(),
               ]).toList(),
             ),
+
           ],
         ),
       );
@@ -379,9 +393,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           DataColumn(label: Text('Presentes')),
                           DataColumn(label: Text('Faltas')),
                           DataColumn(label: Text('Retardos')),
-                          DataColumn(label: Text('Justificados')),
                           DataColumn(label: Text('Entregas')),
                           DataColumn(label: Text('Calificadas')),
+                          DataColumn(label: Text('Asistencia %')),
+                          DataColumn(label: Text('Exámenes')),
+                          DataColumn(label: Text('Evidencias')),
                           DataColumn(label: Text('Final')),
                         ],
                         rows: _filas
@@ -391,9 +407,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 DataCell(Text(f.presentes.toString())),
                                 DataCell(Text(f.faltas.toString())),
                                 DataCell(Text(f.retardos.toString())),
-                                DataCell(Text(f.justificados.toString())),
                                 DataCell(Text(f.entregas.toString())),
                                 DataCell(Text(f.calificadas.toString())),
+                                DataCell(Text((f.asistenciaPct * 100).toStringAsFixed(2))),
+                                DataCell(Text(f.examAvg.toStringAsFixed(2))),
+                                DataCell(Text(f.evidenceAvg.toStringAsFixed(2))),
                                 DataCell(Text(f.finalGrade.toString())),
                               ]),
                             )
@@ -401,6 +419,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       ),
                     ),
                   ),
+
                 ],
               ),
             ),
@@ -418,19 +437,23 @@ class _FilaReporte {
   final int presentes;
   final int faltas;
   final int retardos;
-  final int justificados;
   final int entregas;
   final int calificadas;
-  final int finalGrade;
+  final double asistenciaPct;
+  final double examAvg;
+  final double evidenceAvg;
+  final double finalGrade;
 
   _FilaReporte({
     required this.alumno,
     required this.presentes,
     required this.faltas,
     required this.retardos,
-    required this.justificados,
     required this.entregas,
     required this.calificadas,
+    required this.asistenciaPct,
+    required this.examAvg,
+    required this.evidenceAvg,
     required this.finalGrade,
   });
 }

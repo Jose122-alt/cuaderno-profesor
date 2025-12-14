@@ -31,7 +31,16 @@ class EnrollmentService {
 
   Future<List<Enrollment>> getEnrollmentsByStudentId(String studentId) async {
     final coll = MongoService.instance.collection('enrollments');
-    final docs = await coll.find(where.eq('student_id', studentId)).toList();
+    final int? sidInt = int.tryParse(studentId);
+    final Map<String, dynamic> query = sidInt != null
+        ? {
+            '\$or': [
+              {'student_id': studentId},
+              {'student_id': sidInt},
+            ]
+          }
+        : {'student_id': studentId};
+    final docs = await coll.find(query).toList();
     return docs.map((data) => Enrollment.fromMap(Map<String, dynamic>.from(data))).toList();
   }
 
@@ -50,7 +59,21 @@ class EnrollmentService {
   }
 
   Future<Enrollment?> getEnrollmentByStudentIdAndCourseId(String studentId, int courseId) async {
-    final doc = await MongoService.instance.collection('enrollments').findOne({'student_id': studentId, 'course_id': courseId});
+    final coll = MongoService.instance.collection('enrollments');
+    final int? sidInt = int.tryParse(studentId);
+    final Map<String, dynamic> query = sidInt != null
+        ? {
+            'course_id': courseId,
+            '\$or': [
+              {'student_id': studentId},
+              {'student_id': sidInt},
+            ]
+          }
+        : {
+            'course_id': courseId,
+            'student_id': studentId,
+          };
+    final doc = await coll.findOne(query);
     if (doc == null) return null;
     return Enrollment.fromMap(Map<String, dynamic>.from(doc));
   }

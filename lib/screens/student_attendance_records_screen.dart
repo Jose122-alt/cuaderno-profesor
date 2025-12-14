@@ -70,31 +70,50 @@ class _StudentAttendanceRecordsScreenState extends State<StudentAttendanceRecord
           ? const Center(child: CircularProgressIndicator())
           : _attendanceRecords.isEmpty
               ? const Center(child: Text('No hay registros de asistencia para este curso.'))
-              : ListView.builder(
-                  itemCount: _attendanceRecords.length,
-                  itemBuilder: (context, index) {
-                    final record = _attendanceRecords[index];
-                    final recordDate = DateTime.parse(record.date);
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.all(16.0),
-                        title: Text(
-                          'Fecha: ${recordDate.toLocal().toString().split(' ')[0]}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Text(
-                            'Estado: ${record.status == "1" ? 'Presente' : 'Ausente'}',
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ),
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        'Total asistencias: ${_attendanceRecords.where((r) => r.status == 'present' || r.status == 'presente').length}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    );
-                  },
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: _attendanceRecords.length,
+                        itemBuilder: (context, index) {
+                          final record = _attendanceRecords[index];
+                          final recordDate = DateTime.parse(record.date);
+                          final estado = (record.status == 'present' || record.status == 'presente')
+                              ? 'Presente'
+                              : (record.status == 'late' || record.status == 'tarde')
+                                  ? 'Tarde'
+                                  : 'Ausente';
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(16.0),
+                              title: Text(
+                                'Fecha: ${recordDate.toLocal().toString().split(' ')[0]}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: Text(
+                                  'Estado: $estado',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
     );
   }

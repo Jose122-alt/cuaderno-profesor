@@ -36,7 +36,12 @@ class CourseService {
 
   Future<List<Course>> getCoursesByStudentId(int studentId) async {
     final enrollColl = MongoService.instance.collection('enrollments');
-    final enrollmentDocs = await enrollColl.find({'student_id': studentId}).toList();
+    final enrollmentDocs = await enrollColl.find({
+      '\$or': [
+        {'student_id': studentId},
+        {'student_id': studentId.toString()},
+      ]
+    }).toList();
     final courseIds = enrollmentDocs.map((e) => (e['course_id'] as int)).toList();
     if (courseIds.isEmpty) return [];
     final courseColl = MongoService.instance.collection('courses');

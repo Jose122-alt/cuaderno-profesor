@@ -3,7 +3,7 @@ import 'package:flutter_application_1cuadermo/models/course.dart';
 import 'package:flutter_application_1cuadermo/models/student.dart';
 import 'package:flutter_application_1cuadermo/models/attendance_record.dart';
 import 'package:flutter_application_1cuadermo/services/student_service.dart';
-import 'package:flutter_application_1cuadermo/services/attendance_service.dart';
+import 'package:flutter_application_1cuadermo/services/attendance_record_service.dart';
 
 class AttendanceRecordingScreen extends StatefulWidget {
   final Course course;
@@ -16,7 +16,7 @@ class AttendanceRecordingScreen extends StatefulWidget {
 
 class _AttendanceRecordingScreenState extends State<AttendanceRecordingScreen> {
   final StudentService _studentService = StudentService();
-  final AttendanceService _attendanceService = AttendanceService();
+  final AttendanceRecordService _attendanceRecordService = AttendanceRecordService();
   List<Student> _students = [];
   Map<String, String> _attendanceStatus = {}; // studentId -> status (presente, ausente, tarde)
 
@@ -38,17 +38,21 @@ class _AttendanceRecordingScreenState extends State<AttendanceRecordingScreen> {
 
     for (var student in _students) {
       final sid = int.tryParse(student.id ?? '');
-      AttendanceRecord? record;
       if (sid != null) {
-        record = await _attendanceService.getAttendanceRecordByStudentCourseAndDate(
+        final existingRecords = await _attendanceRecordService.getAttendanceRecordsByStudentCourseAndDate(
           sid,
           widget.course.id!,
-          formattedDate,
+          today,
         );
+        if (existingRecords.isNotEmpty) {
+          existingRecords.sort((a, b) => b.timestamp!.compareTo(a.timestamp!));
+          _attendanceStatus[student.id!] = existingRecords.first.status;
+        } else {
+          _attendanceStatus[student.id!] = 'ausente';
+        }
+      } else {
+        _attendanceStatus[student.id!] = 'ausente';
       }
-      setState(() {
-        _attendanceStatus[student.id!] = record?.status ?? 'ausente';
-      });
     }
   }
 
@@ -68,30 +72,12 @@ class _AttendanceRecordingScreenState extends State<AttendanceRecordingScreen> {
       if (sid == null) {
         continue;
       }
-      final existingRecord = await _attendanceService.getAttendanceRecordByStudentCourseAndDate(
-        sid,
-        widget.course.id!,
-        formattedDate,
+      await _attendanceRecordService.recordAttendance(
+        studentId: sid,
+        courseId: widget.course.id!,
+        date: today,
+        status: status,
       );
-
-      if (existingRecord != null) {
-        final updatedRecord = AttendanceRecord(
-          id: existingRecord.id,
-          studentId: sid,
-          courseId: widget.course.id!,
-          date: formattedDate,
-          status: status,
-        );
-        await _attendanceService.updateAttendanceRecord(updatedRecord);
-      } else {
-        final newRecord = AttendanceRecord(
-          studentId: sid,
-          courseId: widget.course.id!,
-          date: formattedDate,
-          status: status,
-        );
-        await _attendanceService.addAttendanceRecord(newRecord);
-      }
     }
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Asistencia guardada exitosamente!')),

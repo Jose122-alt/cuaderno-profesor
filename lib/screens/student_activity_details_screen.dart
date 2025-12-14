@@ -177,7 +177,7 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                                           activityId: current.id,
                                           description: 'Entrega de actividad ${current.title}',
                                           date: DateTime.now().toIso8601String(),
-                                          status: 'submitted',
+                                          status: isAfterDue ? 'entregado_retraso' : 'submitted',
                                           fileUrl: uploadedFilePath,
                                         );
                                         await _evidenceService.insertEvidence(newEvidence);

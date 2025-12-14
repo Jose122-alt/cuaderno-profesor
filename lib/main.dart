@@ -305,7 +305,7 @@ class StudentModulePage extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => StudentAttendanceRecordsScreen(student: student, course: dummyCourse)),
+                        MaterialPageRoute(builder: (context) => StudentCourseListScreen(student: student)),
                       );
                     },
                   ),

@@ -44,9 +44,6 @@ class EvidenceService {
     return docs.map((data) => Evidence.fromMap(Map<String, dynamic>.from(data))).toList();
   }
 
-  Future<int> getTotalEvidencesForCourse(int courseId) async {
-    return await MongoService.instance.collection('evidences').count({'course_id': courseId});
-  }
 
   Future<int> getStudentSubmittedEvidencesCountForCourse(int studentId, int courseId) async {
     return await MongoService.instance.collection('evidences').count({'student_id': studentId, 'course_id': courseId, 'status': 'submitted'});
@@ -75,5 +72,10 @@ class EvidenceService {
 
   Future<void> deleteEvidence(String id) async {
     await MongoService.instance.collection('evidences').deleteOne({'id': id});
+  }
+
+  Future<void> deleteEvidencesByActivityId(String activityId) async {
+    final coll = MongoService.instance.collection('evidences');
+    await coll.deleteMany({'activity_id': activityId});
   }
 }

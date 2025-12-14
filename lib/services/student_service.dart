@@ -137,7 +137,7 @@ class StudentService {
   }
 
   Future<int> getSubmittedEvidencesForStudentInCourse(int studentId, int courseId) async {
-    final count = await MongoService.instance.collection('evidences').count({'student_id': studentId, 'course_id': courseId, 'status': 'submitted'});
+    final count = await MongoService.instance.collection('evidences').count({'student_id': studentId, 'course_id': courseId, 'status': <String, dynamic>{r'$in': ['submitted', 'entregado_retraso']}});
     return count;
   }
 

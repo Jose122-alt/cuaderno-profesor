@@ -6,6 +6,7 @@ import 'package:flutter_application_1cuadermo/services/student_service.dart';
 import 'package:flutter_application_1cuadermo/services/activity_service.dart';
 import 'package:flutter_application_1cuadermo/services/evidence_service.dart';
 import 'package:flutter_application_1cuadermo/services/attendance_record_service.dart';
+import 'package:flutter_application_1cuadermo/models/attendance_record.dart';
 
 class StudentStatusScreen extends StatefulWidget {
   final Course course;
@@ -39,7 +40,6 @@ class _StudentStatusScreenState extends State<StudentStatusScreen> {
     final actividades = await _activityService.getActivitiesByCourseId(widget.course.id!);
     _totalTareas = actividades.where((a) => a.activityType == 'task').length;
     final registrosCurso = await _attendanceRecordService.getAttendanceRecordsByCourseId(widget.course.id!);
-    _totalClases = registrosCurso.map((r) => r.date).toSet().length;
 
     final estados = <_AlumnoEstado>[];
     for (final enr in enrolls) {
@@ -52,15 +52,19 @@ class _StudentStatusScreenState extends State<StudentStatusScreen> {
       int entregas = 0;
       int calificadas = 0;
       int conA = 0; // A ~ >=90
+      double asistenciaPct = 0.0;
 
       if (sid != null) {
         final registros = await _attendanceRecordService.getAttendanceRecordsByStudentIdAndCourseId(sid, widget.course.id!);
+        
+        Set<String> diasPresentes = {};
         for (final r in registros) {
           final s = (r.status).toLowerCase();
-          if (s == 'present' || s == 'presente' || s == '1' || s == 'a' || s == 'p') {
-            presentes++;
+          if (s == 'present' || s == 'presente' || s == '1' || s == 'a' || s == 'p' || s == 'retraso' || s == 'late') {
+            diasPresentes.add(r.date);
           }
         }
+        presentes = diasPresentes.length;
         entregas = await _evidenceService.getStudentSubmittedEvidencesCountForCourse(sid, widget.course.id!);
         final evidencias = await _evidenceService.getEvidencesByStudentIdAndCourseId(sid, widget.course.id!);
         for (final ev in evidencias) {
@@ -70,9 +74,12 @@ class _StudentStatusScreenState extends State<StudentStatusScreen> {
             if (g >= 90) conA++;
           }
         }
-      }
 
-      final asistenciaPct = _totalClases > 0 ? presentes / _totalClases : 0.0;
+        final int studentTotalClases = 48;
+
+        asistenciaPct = (studentTotalClases > 0) ? (presentes.toDouble() / studentTotalClases.toDouble()) * 100.0 : 0.0;
+        print('DEBUG: Student: ${st.name}, Presentes: $presentes, Total Clases (fijo): $studentTotalClases, Asistencia Pct: $asistenciaPct');
+      }
       final evidenciasPct = _totalTareas > 0 ? entregas / _totalTareas : 0.0;
       final mayoriaA = calificadas > 0 ? (conA / calificadas) >= 0.5 : false;
 
@@ -107,7 +114,7 @@ class _StudentStatusScreenState extends State<StudentStatusScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: ListTile(
                     title: Text(e.alumno),
-                    subtitle: Text('Asistencia: ${(e.asistenciaPct*100).toStringAsFixed(1)}% • Evidencias: ${(e.evidenciasPct*100).toStringAsFixed(1)}%'),
+                    subtitle: Text('Asistencia: ${(e.asistenciaPct).toStringAsFixed(1)}% • Evidencias: ${(e.evidenciasPct*100).toStringAsFixed(1)}%'),
                     trailing: Wrap(spacing: 8, children: [
                       if (e.riesgo)
                         Chip(label: const Text('Riesgo'), backgroundColor: Colors.red.shade100),

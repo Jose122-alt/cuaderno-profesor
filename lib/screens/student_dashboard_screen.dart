@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/student.dart';
 import '../services/student_service.dart';
 import '../services/course_service.dart';
+import '../services/attendance_record_service.dart'; // Importar AttendanceRecordService
 import '../models/course.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class StudentDashboardScreen extends StatefulWidget {
 class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
   final StudentService _studentService = StudentService();
   final CourseService _courseService = CourseService();
+  final AttendanceRecordService _attendanceRecordService = AttendanceRecordService(); // Inicializar AttendanceRecordService
   List<Course> _enrolledCourses = [];
   Map<int, int> _totalClasses = {};
   Map<int, Map<String, int>> _attendanceData = {};
@@ -33,8 +35,8 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
     _enrolledCourses = await _courseService.getCoursesByStudentId(int.parse(widget.student.id!));
 
     for (Course course in _enrolledCourses) {
-      _totalClasses[course.id!] = await _studentService.getTotalClassesForStudentInCourse(widget.student.id!, course.id!);
-      _attendanceData[course.id!] = await _studentService.getStudentAttendanceInCourse(widget.student.id!, course.id!);
+      _totalClasses[course.id!] = await _attendanceRecordService.getTotalClassesForCourse(course.id!); // Usar AttendanceRecordService
+      _attendanceData[course.id!] = await _attendanceRecordService.getStudentDailyAttendanceSummaryForCourse(int.parse(widget.student.id!), course.id!); // Usar AttendanceRecordService
       _totalEvidences[course.id!] = await _studentService.getTotalEvidencesForCourse(course.id!);
       _submittedEvidences[course.id!] = await _studentService.getSubmittedEvidencesForStudentInCourse(int.parse(widget.student.id!), course.id!);
     }
@@ -99,6 +101,7 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen> {
                       final totalEvidences = _totalEvidences[course.id!] ?? 0;
                       final submittedEvidences = _submittedEvidences[course.id!] ?? 0;
                       final attendancePercentage = totalClasses > 0 ? (((attendance?['present'] ?? 0) / totalClasses) * 100) : 0.0;
+                      print('DEBUG: StudentDashboardScreen - Course: ${course.courseName}, Total Classes: $totalClasses, Attendance Data: $attendance, Attendance Percentage: $attendancePercentage');
                       final evidencePercentage = totalEvidences > 0 ? ((submittedEvidences / totalEvidences) * 100) : 0.0;
                       final atRisk = attendancePercentage < 80 || evidencePercentage < 50;
 

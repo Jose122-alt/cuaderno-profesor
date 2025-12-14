@@ -4,6 +4,7 @@ import '../services/course_service.dart';
 import '../models/student.dart';
 import '../models/course.dart';
 import 'package:flutter_application_1cuadermo/screens/student_activity_list_screen.dart';
+import 'package:flutter_application_1cuadermo/screens/student_attendance_records_screen.dart';
 
 class StudentCourseListScreen extends StatefulWidget {
   final Student student;
@@ -87,9 +88,26 @@ class _StudentCourseListScreenState extends State<StudentCourseListScreen> {
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                         ),
-                        trailing: Text(
-                          course.courseCode,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              course.courseCode,
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+                            ),
+                            const SizedBox(width: 12),
+                            IconButton(
+                              icon: const Icon(Icons.fact_check, color: Colors.teal),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => StudentAttendanceRecordsScreen(student: widget.student, course: course),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                         onTap: () {
                           Navigator.push(

@@ -68,12 +68,18 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
           // Load existing attendance record for this student and date
           final sid = int.tryParse(student.id ?? '');
           if (sid != null) {
-            final existingRecord = await _attendanceRecordService.getAttendanceRecordByStudentCourseAndDate(
+            final existingRecords = await _attendanceRecordService.getAttendanceRecordsByStudentCourseAndDate(
               sid,
               _selectedCourse!.id!,
-              _selectedDate.toIso8601String().split('T')[0],
+              _selectedDate,
             );
-            _attendanceStatus[student.id!] = existingRecord?.status == 'present';
+            // Get the latest attendance status for the student on this date
+            if (existingRecords.isNotEmpty) {
+              existingRecords.sort((a, b) => (b.timestamp ?? DateTime(0)).compareTo(a.timestamp ?? DateTime(0))); // Sort by latest timestamp
+              _attendanceStatus[student.id!] = existingRecords.first.status == 'present';
+            } else {
+              _attendanceStatus[student.id!] = false; // Default to absent if no records
+            }
           } else {
             _attendanceStatus[student.id!] = false;
           }
@@ -121,10 +127,10 @@ class _RecordAttendanceScreenState extends State<RecordAttendanceScreen> {
         continue;
       }
       await _attendanceRecordService.recordAttendance(
-        sid,
-        _selectedCourse!.id!,
-        _selectedDate.toIso8601String().split('T')[0],
-        status,
+        studentId: sid,
+        courseId: _selectedCourse!.id!,
+        date: _selectedDate,
+        status: status,
       );
     }
 

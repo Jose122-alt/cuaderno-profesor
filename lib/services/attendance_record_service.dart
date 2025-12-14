@@ -45,45 +45,83 @@ class AttendanceRecordService {
     return docs.map((data) => AttendanceRecord.fromMap(Map<String, dynamic>.from(data))).toList();
   }
 
-  Future<AttendanceRecord?> getAttendanceRecordByStudentCourseAndDate(int studentId, int courseId, String date) async {
+  Future<List<AttendanceRecord>> getAttendanceRecordsByStudentCourseAndDate(int studentId, int courseId, DateTime date) async {
     final coll = MongoService.instance.collection('attendanceRecords');
-    final doc = await coll.findOne({'student_id': studentId, 'course_id': courseId, 'date': date});
-    if (doc == null) return null;
-    return AttendanceRecord.fromMap(Map<String, dynamic>.from(doc));
+    final dateString = date.toIso8601String().split('T')[0];
+    final docs = await coll.find({'student_id': studentId, 'course_id': courseId, 'date': dateString}).toList();
+    return docs.map((data) => AttendanceRecord.fromMap(Map<String, dynamic>.from(data))).toList();
   }
 
-  Future<void> updateAttendanceRecord(AttendanceRecord record) async {
+  Future<void> recordAttendance({
+    required int studentId,
+    required int courseId,
+    required DateTime date,
+    required String status,
+  }) async {
+    print('DEBUG: recordAttendance called with studentId: $studentId, courseId: $courseId, date: $date, status: $status (Inserting new record with timestamp)');
     final coll = MongoService.instance.collection('attendanceRecords');
-    if (record.id == null) return;
-    await coll.updateOne({'id': record.id}, {'\$set': record.toMap()});
-  }
-
-  Future<void> deleteAttendanceRecord(String id) async {
-    final coll = MongoService.instance.collection('attendanceRecords');
-    await coll.deleteOne({'id': id});
-  }
-
-  Future<void> recordAttendance(int studentId, int courseId, String date, String status) async {
-    final coll = MongoService.instance.collection('attendanceRecords');
-    final existing = await coll.findOne({'student_id': studentId, 'course_id': courseId, 'date': date});
-    if (existing != null) {
-      await coll.updateOne({'student_id': studentId, 'course_id': courseId, 'date': date}, {'\$set': {'status': status}});
-    } else {
-      final newRecord = AttendanceRecord(studentId: studentId, courseId: courseId, date: date, status: status);
-      await insertAttendanceRecord(newRecord);
-    }
+    final dateString = date.toIso8601String().split('T')[0]; // Convert DateTime to YYYY-MM-DD string
+    print('DEBUG: dateString for new record: $dateString');
+    final newRecord = AttendanceRecord(
+        studentId: studentId, courseId: courseId, date: dateString, status: status, timestamp: DateTime.now());
+    await insertAttendanceRecord(newRecord);
+    print('DEBUG: New attendance record inserted with timestamp: ${newRecord.timestamp}');
   }
 
   Future<int> getTotalClassesForCourse(int courseId) async {
+    print('DEBUG: getTotalClassesForCourse called for courseId: $courseId');
     final coll = MongoService.instance.collection('attendanceRecords');
     final docs = await coll.find({'course_id': courseId}).toList();
     final Set<String> uniqueDates = docs.map((doc) => doc['date'] as String).toSet();
+    print('DEBUG: getTotalClassesForCourse - uniqueDates count for courseId $courseId: ${uniqueDates.length}');
     return uniqueDates.length;
   }
 
   Future<int> getStudentAttendanceCountForCourse(int studentId, int courseId) async {
+    print('DEBUG: getStudentAttendanceCountForCourse called for studentId: $studentId, courseId: $courseId');
     final coll = MongoService.instance.collection('attendanceRecords');
-    final count = await coll.count({'student_id': studentId, 'course_id': courseId, 'status': 'present'});
-    return count;
+    final docs = await coll.find({'student_id': studentId, 'course_id': courseId, 'status': 'present'}).toList();
+    final Set<String> uniquePresentDates = docs.map((doc) => doc['date'] as String).toSet();
+    print('DEBUG: getStudentAttendanceCountForCourse - unique present dates count for studentId $studentId, courseId $courseId: ${uniquePresentDates.length}');
+    return uniquePresentDates.length;
+  }
+
+  Future<Map<String, int>> getStudentDailyAttendanceSummaryForCourse(int studentId, int courseId) async {
+    print('DEBUG: getStudentDailyAttendanceSummaryForCourse - Function called for studentId: $studentId, courseId: $courseId');
+    final coll = MongoService.instance.collection('attendanceRecords');
+    final docs = await coll.find({'student_id': studentId, 'course_id': courseId}).toList();
+
+    print('DEBUG: getStudentDailyAttendanceSummaryForCourse - Fetched ${docs.length} raw documents.');
+    final Map<String, List<AttendanceRecord>> recordsByDate = {};
+    for (var doc in docs) {
+      final record = AttendanceRecord.fromMap(Map<String, dynamic>.from(doc));
+      final dateString = record.date;
+      recordsByDate.putIfAbsent(dateString, () => []).add(record);
+    }
+    print('DEBUG: getStudentDailyAttendanceSummaryForCourse - Records grouped by date: ${recordsByDate.length} unique dates.');
+
+    final Map<String, int> summary = {
+      'present': 0,
+      'absent': 0,
+      'late': 0,
+      'justified': 0,
+    };
+
+    recordsByDate.forEach((date, records) {
+        if (records.isNotEmpty) {
+          records.sort((a, b) => (b.timestamp ?? DateTime(0)).compareTo(a.timestamp ?? DateTime(0))); // Sort by latest timestamp, treating nulls as earliest
+          final latestStatus = records.first.status;
+          print('DEBUG: getStudentDailyAttendanceSummaryForCourse - Date: $date, Latest Status: $latestStatus');
+          if (summary.containsKey(latestStatus)) {
+            summary[latestStatus] = (summary[latestStatus] ?? 0) + 1;
+          } else {
+            print('DEBUG: getStudentDailyAttendanceSummaryForCourse - Unknown status encountered: $latestStatus');
+          }
+        } else {
+          print('DEBUG: getStudentDailyAttendanceSummaryForCourse - Empty records list for date: $date (should not happen)');
+        }
+    });
+    print('DEBUG: getStudentDailyAttendanceSummaryForCourse - summary for studentId $studentId, courseId $courseId: $summary');
+    return summary;
   }
 }

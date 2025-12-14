@@ -1,11 +1,24 @@
-import 'package:flutter_application_1cuadermo/models/activity.dart';
+import '../models/activity.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 import 'mongo_service.dart';
+import 'evidence_service.dart';
 
 class ActivityService {
 
   Future<void> addActivity(Activity activity) async {
     final coll = MongoService.instance.collection('activities');
+    // Verificar si ya existe una actividad con el mismo courseId y title
+    final existingActivity = await coll.findOne({
+      'course_id': activity.courseId,
+      'title': activity.title,
+    });
+
+    if (existingActivity != null) {
+      // Si ya existe, no insertamos y podemos lanzar una excepción o simplemente retornar
+      print('Activity with title "${activity.title}" already exists for course ID ${activity.courseId}. Not inserting duplicate.');
+      return;
+    }
+
     final id = ObjectId();
     final doc = activity.toMap();
     doc['_id'] = id;
@@ -59,6 +72,7 @@ class ActivityService {
   }
 
   Future<void> deleteActivity(String activityId) async {
+    print('DEBUG: Deleting activity with ID: $activityId');
     final coll = MongoService.instance.collection('activities');
     final List<Map<String, dynamic>> orClauses = [];
     final int? intId = int.tryParse(activityId);
@@ -68,10 +82,24 @@ class ActivityService {
     orClauses.add({'id': activityId});
     if (RegExp(r'^[a-fA-F0-9]{24}$').hasMatch(activityId)) {
       try {
-        orClauses.add({'_id': ObjectId.fromHexString(activityId)});
+        orClauses.add({'_id': ObjectId.fromHexString(activityId)}); 
       } catch (_) {}
     }
     final query = orClauses.length == 1 ? orClauses.first : {'\$or': orClauses};
+    print('DEBUG: Delete query for activity: $query');
     await coll.deleteOne(query);
+
+    // Eliminar también las evidencias asociadas a esta actividad
+    final evidenceService = EvidenceService();
+    await evidenceService.deleteEvidencesByActivityId(activityId);
+    print('DEBUG: Evidences associated with activity ID $activityId deleted.');
+  }
+
+  Future<int> getTotalActivitiesForCourse(int courseId) async {
+    print('DEBUG: Getting total activities for course ID: $courseId');
+    final coll = MongoService.instance.collection('activities');
+    final count = await coll.count({'course_id': courseId});
+    print('DEBUG: Total activities for course ID $courseId: $count');
+    return count;
   }
 }

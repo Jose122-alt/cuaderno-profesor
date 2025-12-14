@@ -43,12 +43,14 @@ class Evidence {
       id: map['id'] as String?,
       courseId: map['course_id'] as int,
       studentId: map['student_id'] as int,
-      activityId: map['activity_id'] as String?, // Asegurarse de que se lea correctamente
+      activityId: map['activity_id'] as String?,
       description: map['description'] as String,
       date: map['date'] as String,
       status: map['status'] as String? ?? 'pending',
       fileUrl: map['file_url'] as String?,
-      grade: map['grade'] is int ? map['grade'] as int : (map['grade'] is String ? int.tryParse(map['grade']) : null),
+      grade: map['grade'] is num
+          ? (map['grade'] as num).toInt()
+          : (map['grade'] is String ? int.tryParse(map['grade']) : null),
       comment: map['comment'] as String?,
     );
   }
