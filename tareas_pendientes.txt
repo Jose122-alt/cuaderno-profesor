@@ -1,0 +1,42 @@
+# Tareas Pendientes - Proyecto Cuaderno Profesor
+
+## Prioridad Alta (Evaluaciones - Urgente)
+
+1.  **Implementar las 3 evaluaciones parciales y la ordinaria:**
+    *   Definir la estructura de datos para las evaluaciones (ponderaciones, categorías, etc.).
+    *   Desarrollar la lógica para crear, editar y eliminar evaluaciones.
+    *   Integrar la asignación de calificaciones a estudiantes por evaluación.
+    *   Calcular el promedio de calificaciones por estudiante y por curso, considerando las ponderaciones.
+    *   Mostrar las calificaciones de las evaluaciones en la interfaz del profesor y del alumno.
+
+## Prioridad Media (Indicadores de Riesgo/Exención - Profesor)
+
+2.  **Indicador de Riesgo de Reprobación:**
+    *   Calcular porcentaje de asistencia (menos del 80%).
+    *   Calcular porcentaje de evidencias entregadas (menos del 50%).
+    *   Desarrollar la lógica para identificar estudiantes en riesgo.
+    *   Mostrar visualmente los estudiantes en riesgo en la interfaz del profesor.
+3.  **Indicador de Exención:**
+    *   Calcular porcentaje de asistencia (al menos 95%).
+    *   Calcular porcentaje de evidencias entregadas (al menos 90% con mayoría 'A').
+    *   Desarrollar la lógica para identificar estudiantes exentos.
+    *   Mostrar visualmente los estudiantes exentos en la interfaz del profesor.
+
+## Prioridad Media (Módulo Móvil - Alumno)
+
+4.  **Visualización del Avance del Alumno:**
+    *   Mostrar "Total de Clases" para cada asignatura.
+    *   Mostrar "Asistencia" (número de asistencias) para cada asignatura.
+    *   Mostrar "% Asistencia" para cada asignatura.
+    *   Mostrar "Total de Evidencias de la asignatura".
+    *   Mostrar "Evidencias entregadas" (número) para cada asignatura.
+    *   Mostrar "% de Evidencias entregadas" para cada asignatura.
+5.  **Investigar y solucionar el problema de carga en el lado del estudiante (similar a los informes del profesor).**
+
+## Prioridad Baja (Módulo Web - Reportes)
+
+6.  **Generación de Reportes Estadísticos:**
+    *   Desarrollar la funcionalidad para generar reportes por grupo y/o materia.
+    *   Implementar filtros por semana, mes o rango de fechas.
+    *   Visualizar estadísticas de asistencia y evidencias.
+    *   Integrar la información de las evaluaciones en los reportes.
