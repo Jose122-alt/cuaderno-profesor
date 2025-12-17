@@ -9,22 +9,43 @@ import 'package:flutter_application_1cuadermo/models/evidence.dart';
 import 'package:flutter_application_1cuadermo/models/student.dart';
 import 'package:flutter_application_1cuadermo/services/activity_service.dart';
 
-class StudentActivityDetailsScreen extends StatelessWidget {
+class StudentActivityDetailsScreen extends StatefulWidget {
   final Activity activity;
   final Student student;
+
+  const StudentActivityDetailsScreen({super.key, required this.activity, required this.student});
+
+  @override
+  State<StudentActivityDetailsScreen> createState() => _StudentActivityDetailsScreenState();
+}
+
+class _StudentActivityDetailsScreenState extends State<StudentActivityDetailsScreen> {
   final FileUploadService _fileUploadService = FileUploadService();
   final EvidenceService _evidenceService = EvidenceService();
   final ActivityService _activityService = ActivityService();
 
-  StudentActivityDetailsScreen({super.key, required this.activity, required this.student});
+  Future<void> _downloadFile(String fileUrl) async {
+    if (fileUrl.startsWith('web-upload://')) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Descarga no disponible en navegador para archivos subidos en web.')));
+      return;
+    }
+    final fileName = p.basename(fileUrl);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Descargando $fileName...')));
+    final downloadedPath = await _fileUploadService.downloadFile(fileUrl, fileName);
+    if (downloadedPath != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Archivo descargado en: $downloadedPath')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al descargar el archivo.')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final bool isTask = activity.activityType == 'task';
-    final bool isClosed = isTask && DateTime.now().isAfter(activity.dueDate) && !activity.allowLateSubmissions;
+    final bool isTask = widget.activity.activityType == 'task';
+    final bool isClosed = isTask && DateTime.now().isAfter(widget.activity.dueDate) && !widget.activity.allowLateSubmissions;
     return Scaffold(
       appBar: AppBar(
-        title: Text(activity.title),
+        title: Text(widget.activity.title),
         backgroundColor: Colors.blueAccent,
       ),
       body: SingleChildScrollView(
@@ -42,7 +63,7 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                Text(activity.description),
+                Text(widget.activity.description),
                 const SizedBox(height: 16),
                 if (isTask)
                   Column(
@@ -54,14 +75,14 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      Text(activity.dueDate.toLocal().toString().split(' ')[0]),
+                      Text(widget.activity.dueDate.toLocal().toString().split(' ')[0]),
                     const SizedBox(height: 16),
                   ],
                 ),
                 FutureBuilder<Activity?>(
-                  future: activity.id != null ? _activityService.getActivityById(activity.id!) : Future.value(activity),
+                  future: widget.activity.id != null ? _activityService.getActivityById(widget.activity.id!) : Future.value(widget.activity),
                   builder: (ctx, snap) {
-                    final Activity act = snap.data ?? activity;
+                    final Activity act = snap.data ?? widget.activity;
                     final bool isTask2 = act.activityType == 'task';
                     if (!isTask2) return const SizedBox.shrink();
                     final bool isClosed2 = DateTime.now().isAfter(act.dueDate) && !act.allowLateSubmissions;
@@ -75,7 +96,7 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                         const SizedBox(height: 8),
                         FutureBuilder<Evidence?>(
                           future: (() async {
-                            final int? sid = int.tryParse(student.id ?? '');
+                            final int? sid = int.tryParse(widget.student.id ?? '');
                             if (sid == null || act.id == null) return null;
                             return await _evidenceService.getEvidenceByStudentIdAndActivityId(sid, act.id!);
                           })(),
@@ -114,7 +135,7 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                         else
                           FutureBuilder<Evidence?>(
                             future: (() async {
-                              final int? sid = int.tryParse(student.id ?? '');
+                              final int? sid = int.tryParse(widget.student.id ?? '');
                               if (sid == null || act.id == null) return null;
                               return await _evidenceService.getEvidenceByStudentIdAndActivityId(sid, act.id!);
                             })(),
@@ -155,7 +176,7 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                                       );
                                       return;
                                     }
-                                    final String uploadPath = 'submissions/activity_${current.id}/student_${student.id}';
+                                    final String uploadPath = 'submissions/activity_${current.id}/student_${widget.student.id}';
                                     String? uploadedFilePath;
                                     if (filePath != null && !kIsWeb) {
                                       uploadedFilePath = await _fileUploadService.uploadFileFromPath(filePath, uploadPath);
@@ -164,7 +185,7 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                                     }
                                     if (uploadedFilePath != null) {
                                       try {
-                                        final int? sid = int.tryParse(student.id ?? '');
+                                        final int? sid = int.tryParse(widget.student.id ?? '');
                                         if (sid == null) {
                                           ScaffoldMessenger.of(context).showSnackBar(
                                             const SnackBar(content: Text('Error: ID de estudiante inválido.')),
@@ -228,7 +249,7 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                     );
                   },
                 ),
-                if (activity.fileUrl != null)
+                if (widget.activity.fileUrl != null)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -237,7 +258,11 @@ class StudentActivityDetailsScreen extends StatelessWidget {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
-                      Text(p.basename(activity.fileUrl!)),
+                      Text(p.basename(widget.activity.fileUrl!)),
+                      IconButton(
+                        icon: const Icon(Icons.download),
+                        onPressed: () => _downloadFile(widget.activity.fileUrl!),
+                      ),
                     ],
                   ),
               ],

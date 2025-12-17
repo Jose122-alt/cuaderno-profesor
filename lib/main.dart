@@ -298,17 +298,6 @@ class StudentModulePage extends StatelessWidget {
                       );
                     },
                   ),
-                  _buildActionCard(
-                    context,
-                    icon: Icons.fact_check,
-                    label: 'Asistencia',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => StudentCourseListScreen(student: student)),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),

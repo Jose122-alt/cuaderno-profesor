@@ -34,7 +34,7 @@ class _GradeAssignmentScreenState extends State<GradeAssignmentScreen> {
       _isLoading = true;
     });
 
-    final enrollments = await _enrollmentService.getEnrollmentsByCourseId(widget.evaluation.courseId);
+    final enrollments = await _enrollmentService.getEnrollmentsByCourseId(int.parse(widget.evaluation.courseId));
     final studentIds = enrollments.map((e) => e.studentId).whereType<String>().toList();
     _students = await _studentService.getStudentsByIds(studentIds);
 

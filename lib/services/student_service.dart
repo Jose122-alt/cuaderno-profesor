@@ -5,8 +5,14 @@ import '../models/student.dart';
 
 class StudentService {
 
-  Future<void> addStudent(Student student) async {
-    await MongoService.instance.collection('students').insertOne(student.toMap());
+  Future<Student> addStudent(Student student) async {
+    final coll = MongoService.instance.collection('students');
+    final doc = student.toMap();
+    final last = await coll.find(where.sortBy('id', descending: true)).toList();
+    final nextId = (last.isNotEmpty && last.first['id'] is int) ? (last.first['id'] as int) + 1 : 1;
+    doc['id'] = doc['id'] ?? nextId;
+    await coll.insertOne(doc);
+    return Student.fromMap(Map<String, dynamic>.from(doc));
   }
 
   Future<List<Student>> getStudents() async {
@@ -152,5 +158,42 @@ class StudentService {
       doc['id'] = nextId;
     }
     return Student.fromMap(Map<String, dynamic>.from(doc));
+  }
+
+  Future<List<Student>> getStudentsByIds(List<dynamic> studentIds) async {
+    if (studentIds.isEmpty) return [];
+    final coll = MongoService.instance.collection('students');
+    final orClauses = <Map<String, dynamic>>[];
+
+    final stringIds = <String>[];
+    final intIds = <int>[];
+    final objectIds = <ObjectId>[];
+
+    for (final id in studentIds) {
+      if (id is String) {
+        stringIds.add(id);
+        final int? parsed = int.tryParse(id);
+        if (parsed != null) intIds.add(parsed);
+        if (RegExp(r'^[a-fA-F0-9]{24}$').hasMatch(id)) {
+          try { objectIds.add(ObjectId.fromHexString(id)); } catch (_) {}
+        }
+      } else if (id is int) {
+        intIds.add(id);
+        stringIds.add(id.toString());
+      } else if (id is ObjectId) {
+        stringIds.add(id.oid);
+        objectIds.add(id);
+      }
+    }
+
+    if (stringIds.isNotEmpty) { orClauses.add({'id': {'\$in': stringIds}}); }
+    if (intIds.isNotEmpty) { orClauses.add({'id': {'\$in': intIds}}); }
+    if (objectIds.isNotEmpty) { orClauses.add({'_id': {'\$in': objectIds}}); }
+
+    if (orClauses.isEmpty) return [];
+
+    final query = orClauses.length == 1 ? orClauses.first : {'\$or': orClauses};
+    final students = await coll.find(query).toList();
+    return students.map((data) => Student.fromMap(Map<String, dynamic>.from(data))).toList();
   }
 }

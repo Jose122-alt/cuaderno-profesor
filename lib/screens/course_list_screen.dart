@@ -89,15 +89,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                          onPressed: () {
-                            // TODO: Implement edit course screen navigation
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Funcionalidad de edición aún no implementada')),
-                            );
-                          },
-                        ),
+
                         IconButton(
                           icon: const Icon(Icons.assignment, color: Colors.green), // Icono para gestionar actividades
                           onPressed: () {
@@ -131,17 +123,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
                             );
                           },
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.people, color: Colors.deepPurple),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => StudentStatusScreen(course: course),
-                              ),
-                            );
-                          },
-                        ),
+
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.redAccent),
                           onPressed: () => _deleteCourse(course.id!),

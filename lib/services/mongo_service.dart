@@ -10,7 +10,7 @@ class MongoService {
 
   Future<void> init({String? connectionString, String? dbName}) async {
     final conn = connectionString ?? 'mongodb://127.0.0.1:27017';
-    final name = dbName ?? 'cuadernoprofe';
+    final name = dbName ?? 'cuaderno';
     _db = await Db.create('$conn/$name');
     await _db!.open();
   }

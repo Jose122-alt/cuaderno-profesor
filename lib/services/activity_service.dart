@@ -5,7 +5,7 @@ import 'evidence_service.dart';
 
 class ActivityService {
 
-  Future<void> addActivity(Activity activity) async {
+  Future<Activity> addActivity(Activity activity) async {
     final coll = MongoService.instance.collection('activities');
     // Verificar si ya existe una actividad con el mismo courseId y title
     final existingActivity = await coll.findOne({
@@ -15,8 +15,8 @@ class ActivityService {
 
     if (existingActivity != null) {
       // Si ya existe, no insertamos y podemos lanzar una excepción o simplemente retornar
-      print('Activity with title "${activity.title}" already exists for course ID ${activity.courseId}. Not inserting duplicate.');
-      return;
+      print('Activity with title "${activity.title}" already exists for course ID ${activity.courseId}. Returning existing activity.');
+      return Activity.fromMap(Map<String, dynamic>.from(existingActivity));
     }
 
     final id = ObjectId();
@@ -24,6 +24,7 @@ class ActivityService {
     doc['_id'] = id;
     doc['id'] = activity.id ?? id.toHexString();
     await coll.insertOne(doc);
+    return Activity.fromMap(Map<String, dynamic>.from(doc));
   }
 
   Future<List<Activity>> getActivitiesByCourseId(int courseId) async {

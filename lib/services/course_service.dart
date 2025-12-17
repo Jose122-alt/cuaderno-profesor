@@ -4,7 +4,7 @@ import 'mongo_service.dart';
 
 class CourseService {
 
-  Future<void> insertCourse(Course course) async {
+  Future<Course> insertCourse(Course course) async {
     final coll = MongoService.instance.collection('courses');
     final id = ObjectId();
     final doc = course.toMap();
@@ -13,6 +13,7 @@ class CourseService {
     doc['_id'] = id;
     doc['id'] = course.id ?? nextId;
     await coll.insertOne(doc);
+    return Course.fromMap(Map<String, dynamic>.from(doc));
   }
 
   Future<List<Course>> getCourses() async {

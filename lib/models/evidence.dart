@@ -7,7 +7,7 @@ class Evidence {
   final String date;
   final String status; // e.g., 'pending', 'submitted', 'graded'
   final String? fileUrl;
-  final int? grade; // calificación opcional
+  final double? grade; // calificación opcional
   final String? comment; // comentario del profesor
 
   Evidence({
@@ -48,9 +48,7 @@ class Evidence {
       date: map['date'] as String,
       status: map['status'] as String? ?? 'pending',
       fileUrl: map['file_url'] as String?,
-      grade: map['grade'] is num
-          ? (map['grade'] as num).toInt()
-          : (map['grade'] is String ? int.tryParse(map['grade']) : null),
+      grade: map['grade'] is num ? (map['grade'] as num).toDouble() : null,
       comment: map['comment'] as String?,
     );
   }
@@ -64,7 +62,7 @@ class Evidence {
     String? date,
     String? status,
     String? fileUrl,
-    int? grade,
+    double? grade,
     String? comment,
   }) {
     return Evidence(

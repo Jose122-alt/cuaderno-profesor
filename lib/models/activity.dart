@@ -39,7 +39,12 @@ class Activity {
   }
 
   static Activity fromMap(Map<String, dynamic> map) {
-    final String? activityId = map['id'] as String? ?? (map['_id'] is ObjectId ? (map['_id'] as ObjectId).toHexString() : null);
+    String? activityId;
+    if (map['id'] != null) {
+      activityId = map['id'].toString();
+    } else if (map['_id'] is ObjectId) {
+      activityId = (map['_id'] as ObjectId).toHexString();
+    }
     final dynamic dueRaw = map['due_date'];
     final DateTime due = dueRaw is DateTime ? dueRaw : DateTime.parse(dueRaw.toString());
     final dynamic lateRaw = map['allow_late_submissions'];

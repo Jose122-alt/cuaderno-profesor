@@ -103,7 +103,7 @@ class _ActivitySubmissionsScreenState extends State<ActivitySubmissionsScreen> {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
           ElevatedButton(
             onPressed: () async {
-              final grade = int.tryParse(gradeCtrl.text);
+              final grade = double.tryParse(gradeCtrl.text);
               final updated = evidence.copyWith(
                 grade: grade,
                 description: descriptionCtrl.text.trim().isEmpty ? evidence.description : descriptionCtrl.text.trim(),

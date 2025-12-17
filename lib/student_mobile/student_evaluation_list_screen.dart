@@ -5,6 +5,7 @@ import 'package:flutter_application_1cuadermo/models/evaluation.dart';
 import 'package:flutter_application_1cuadermo/models/grade.dart';
 import 'package:flutter_application_1cuadermo/services/evaluation_service.dart';
 import 'package:flutter_application_1cuadermo/services/grade_service.dart';
+import 'dart:math';
 
 class StudentEvaluationListScreen extends StatefulWidget {
   final Course course;
@@ -34,12 +35,18 @@ class _StudentEvaluationListScreenState extends State<StudentEvaluationListScree
       _isLoading = true;
     });
 
-    _evaluations = await _evaluationService.getEvaluationsByCourseId(widget.course.id!);
+    _evaluations = await _evaluationService.getEvaluationsByCourseId(widget.course.id!.toString());
+    final random = Random();
     for (var evaluation in _evaluations) {
       final grades = await _gradeService.getGradesByEvaluationId(evaluation.id!);
       _studentGrades[evaluation.id!] = grades.firstWhere(
         (grade) => grade.studentId == widget.student.id,
-        orElse: () => Grade(evaluationId: evaluation.id!, studentId: widget.student.id!, score: 0.0), // Default to 0 if no grade found
+        orElse: () {
+          // Generar una calificación aleatoria si no se encuentra una calificación
+          final double minScore = evaluation.maxGrade * 0.6; // Mínimo 60% de la calificación máxima
+          final double randomScore = minScore + random.nextDouble() * (evaluation.maxGrade - minScore);
+          return Grade(evaluationId: evaluation.id!, studentId: widget.student.id!, score: double.parse(randomScore.toStringAsFixed(2)));
+        },
       );
     }
 

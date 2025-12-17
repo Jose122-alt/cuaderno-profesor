@@ -28,7 +28,7 @@ class _EvaluationManagementScreenState extends State<EvaluationManagementScreen>
     setState(() {
       _isLoading = true;
     });
-    _evaluations = await _evaluationService.getEvaluationsByCourseId(widget.course.id!);
+    _evaluations = await _evaluationService.getEvaluationsByCourseId(widget.course.id!.toString());
     setState(() {
       _isLoading = false;
     });
@@ -116,7 +116,7 @@ class _EvaluationManagementScreenState extends State<EvaluationManagementScreen>
 
                   final newEvaluation = Evaluation(
                     id: evaluation?.id,
-                    courseId: widget.course.id!,
+                    courseId: widget.course.id!.toString(),
                     evaluationName: nameController.text,
                     weight: double.parse(weightController.text),
                     category: selectedCategory,

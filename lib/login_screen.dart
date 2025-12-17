@@ -56,8 +56,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       if (widget.userType == UserType.teacher) {
+        print('DEBUG: Intentando iniciar sesión como profesor.');
+        print('DEBUG: Identificador ingresado: $identifier');
+        print('DEBUG: Contraseña ingresada: $password');
         final Teacher? teacher = await _teacherService.getTeacherByAccountNumber(identifier);
+        print('DEBUG: Profesor recuperado de la base de datos: $teacher');
+        if (teacher != null) {
+          print('DEBUG: Contraseña almacenada para el profesor: ${teacher.password}');
+        }
         if (teacher != null && teacher.password == password) {
+          print('DEBUG: Credenciales de profesor válidas. Navegando a TeacherModulePage.');
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -68,6 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
           setState(() {
             _errorMessage = 'Credenciales de profesor inválidas.';
           });
+          print('DEBUG: Credenciales de profesor inválidas. Error: $_errorMessage');
         }
       } else if (widget.userType == UserType.student) {
         final Student? student = await _studentService.getStudentByAccountNumber(identifier);

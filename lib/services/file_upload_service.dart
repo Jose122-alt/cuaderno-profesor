@@ -9,4 +9,8 @@ class FileUploadService {
   Future<String?> uploadBytes(Uint8List bytes, String filename, String targetPath) {
     return FileUploadImpl().uploadBytes(bytes, filename, targetPath);
   }
+
+  Future<String?> downloadFile(String fileUrl, String fileName) {
+    return FileUploadImpl().downloadFile(fileUrl, fileName);
+  }
 }
